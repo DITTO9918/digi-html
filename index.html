@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digitalizacion // 4º ESO C · 2025-2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5.0.0/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/rajdhani@5.0.0/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.0/index.css">
+<style>
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-purple: #b026ff;
+    --neon-pink: #ff00aa;
+    --bg-dark: #05060a;
+    --bg-panel: rgba(10, 14, 22, 0.8);
+    --border-glow: rgba(0, 240, 255, 0.25);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-dark);
+    color: #e2e8f0;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #bgCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    opacity: 0.6;
+  }
+  .app {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+  }
+  .font-tech { font-family: 'Orbitron', sans-serif; letter-spacing: 0.05em; }
+  .font-mono-tech { font-family: 'JetBrains Mono', monospace; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--neon-cyan), var(--neon-purple)); border-radius: 4px; }
+
+  .header {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg, rgba(5,6,10,0.95), rgba(10,14,22,0.85));
+    border-bottom: 1px solid var(--border-glow);
+    backdrop-filter: blur(12px);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    color: #000;
+    font-size: 18px;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 8px var(--neon-cyan)); }
+    50% { filter: drop-shadow(0 0 16px var(--neon-purple)); }
+  }
+  .status-bar {
+    display: flex;
+    gap: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .status-item { display: flex; align-items: center; gap: 6px; }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 6px var(--neon-cyan);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .sidebar {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-glow);
+    backdrop-filter: blur(12px);
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .sidebar-title {
+    padding: 0 20px 16px;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 12px;
+  }
+  .folder {
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+  }
+  .folder:hover { background: rgba(0, 240, 255, 0.04); }
+  .folder.active {
+    background: rgba(0, 240, 255, 0.08);
+    border-left-color: var(--neon-cyan);
+  }
+  .folder-header {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .folder-icon {
+    width: 28px; height: 20px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    clip-path: polygon(0 0, 40% 0, 50% 20%, 100% 20%, 100% 100%, 0 100%);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .folder-icon::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 2px;
+    background: var(--neon-cyan);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .folder:hover .folder-icon::after, .folder.active .folder-icon::after { opacity: 1; }
+  .folder-arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    color: #64748b;
+    font-size: 10px;
+  }
+  .folder.expanded .folder-arrow { transform: rotate(90deg); }
+  .subfolder-list {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0,0,0,0.2);
+  }
+  .folder.expanded .subfolder-list { max-height: 500px; }
+  .subfolder {
+    padding: 10px 20px 10px 60px;
+    font-size: 13px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .subfolder:hover { color: var(--neon-cyan); background: rgba(0, 240, 255, 0.03); }
+  .subfolder.active {
+    color: var(--neon-cyan);
+    background: rgba(0, 240, 255, 0.06);
+    border-left-color: var(--neon-purple);
+  }
+  .subfolder-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: currentColor;
+  }
+
+  .main {
+    overflow-y: auto;
+    padding: 32px 40px;
+    position: relative;
+  }
+  .content-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    backdrop-filter: blur(16px);
+    padding: 32px;
+    margin-bottom: 24px;
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .breadcrumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .breadcrumb span { color: var(--neon-cyan); }
+  .breadcrumb .sep { color: #475569; }
+
+  .hero-banner {
+    width: 100%;
+    height: 200px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(176, 38, 255, 0.1));
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-glow);
+    display: flex;
+    align-items: flex-end;
+  }
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 240, 255, 0.03) 2px, rgba(0, 240, 255, 0.03) 4px);
+  }
+  .hero-title {
+    position: relative;
+    z-index: 2;
+    padding: 24px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+  }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .section-subtitle {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 24px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .content-block {
+    margin-bottom: 28px;
+  }
+  .content-block h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    color: var(--neon-cyan);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .content-block h3::before {
+    content: '>';
+    color: var(--neon-purple);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .content-block p, .content-block li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #cbd5e1;
+  }
+  .content-block ul, .content-block ol {
+    padding-left: 24px;
+    margin: 8px 0;
+  }
+  .content-block li { margin-bottom: 6px; }
+  .content-block li::marker { color: var(--neon-cyan); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(0, 240, 255, 0.1);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-purple {
+    background: rgba(176, 38, 255, 0.1);
+    color: var(--neon-purple);
+    border-color: rgba(176, 38, 255, 0.3);
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.1), rgba(176, 38, 255, 0.1));
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--neon-cyan);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  .link-btn:hover {
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.2), rgba(176, 38, 255, 0.2));
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  table.tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  table.tech-table th {
+    background: rgba(0, 240, 255, 0.08);
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-glow);
+  }
+  table.tech-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #cbd5e1;
+  }
+  table.tech-table tr:hover td { background: rgba(0, 240, 255, 0.03); }
+
+  .info-card {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .info-card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    color: var(--neon-purple);
+    margin-bottom: 6px;
+  }
+
+  .authors-box {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .author-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(176, 38, 255, 0.08);
+    border: 1px solid rgba(176, 38, 255, 0.25);
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #e2e8f0;
+  }
+  .author-avatar {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #000;
+  }
+
+  .hardware-img {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.05), rgba(176, 38, 255, 0.05));
+    margin-bottom: 16px;
+    border: 1px solid var(--border-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-cyan);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+  }
+
+  .glitch-text {
+    position: relative;
+  }
+  .glitch-text:hover {
+    animation: glitch 0.3s;
+  }
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 240, 255, 0.015) 2px,
+      rgba(0, 240, 255, 0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .sidebar { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border-glow); }
+    .main { padding: 20px; }
+    .hero-title { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="scanline"></div>
+
+<div class="app">
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">D</div>
+      <div>
+        <div class="font-tech text-lg font-bold" style="color: #fff;">DIGITALIZACION</div>
+        <div class="font-mono-tech" style="font-size: 10px; color: #64748b;">SYS://4ESO-C/2025-2026 · v2.4.1</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item"><div class="status-dot"></div> ONLINE</div>
+      <div class="status-item">LAT: 0.03ms</div>
+      <div class="status-item">BW: 98.7TB/s</div>
+      <div class="status-item" style="color: var(--neon-cyan);">ENC: QUANTUM-LOCKED</div>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main" id="mainContent"></main>
+</div>
+
+<script>
+const data = {
+  intro: {
+    title: "Panel de Control",
+    subtitle: "root > dashboard",
+    content: `
+      <div class="hero-banner">
+        <div class="hero-title">PORTFOLIO DE DIGITALIZACION · 2025-2026</div>
+      </div>
+      <div class="content-block">
+        <p style="font-size: 16px; color: #e2e8f0; line-height: 1.8;">
+          Este documento recoge todas las actividades realizadas durante el curso, organizadas por bloques temáticos.
+          Navega por las carpetas del panel lateral para acceder al contenido detallado de cada bloque y subactividad.
+        </p>
+      </div>
+      <div class="content-block">
+        <h3>Autor del Proyecto</h3>
+        <div class="authors-box">
+          <div class="author-chip"><div class="author-avatar">S</div> Sergio Salas Diez</div>
+        </div>
+      </div>
+      <div class="content-block">
+        <h3>Informacion del Curso</h3>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+          <span class="tag">Curso 2025-2026</span>
+          <span class="tag tag-purple">4º ESO C</span>
+          <span class="tag">Tecnologia</span>
+          <span class="tag tag-purple">6 Bloques</span>
+        </div>
+      </div>
+    `
+  },
+  blocks: [
+    {
+      id: "b1",
+      title: "Bloque 1: Hardware",
+      subtitle: "Desmontaje y Montaje de un Ordenador",
+      icon: "",
+      subfolders: [
+        {
+          id: "b1-1",
+          title: "Practica Completa",
+          content: `
+            <div class="hardware-img">[ VISUALIZACION DE HARDWARE ]</div>
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Practica en la que desmontamos y volvimos a montar un ordenador de escritorio completo, identificando todos sus componentes internos.</p>
+            </div>
+            <div class="content-block">
+              <h3>Objetivo</h3>
+              <p>Conocer las partes internas de un ordenador, desarrollar habilidades con el hardware y aprender a trabajar en equipo de forma organizada.</p>
+            </div>
+            <div class="content-block">
+              <h3>Materiales utilizados</h3>
+              <ul>
+                <li>Ordenador de escritorio completo</li>
+                <li>Destornilladores de estrella y planos</li>
+                <li>Telefono movil para documentar con fotos</li>
+                <li>Papel y boligrafo para anotaciones</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Componentes identificados</h3>
+              <ul>
+                <li><strong>Placa base:</strong> pieza principal donde se conectan todos los dispositivos</li>
+                <li><strong>Memorias RAM:</strong> almacenamiento temporal (3 modulos)</li>
+                <li><strong>Disco duro (HDD):</strong> almacenamiento permanente de datos</li>
+                <li><strong>Fuente de alimentacion (PSU):</strong> suministra energia al sistema</li>
+                <li><strong>Ventiladores y disipadores:</strong> refrigeracion del sistema</li>
+                <li><strong>Carcasa/chasis metalico:</strong> estructura que protege los componentes</li>
+                <li><strong>Puertos de la placa base:</strong> USB 2.0/3.0, Ethernet RJ-45, audio, VGA/HDMI, PCI Express</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Proceso</h3>
+              <ol>
+                <li>Desconexion de la corriente y descarga de electricidad estatica</li>
+                <li>Retirada de la tapa lateral y fotografia del interior</li>
+                <li>Desmontaje ordenado documentando cada paso</li>
+                <li>Limpieza del interior</li>
+                <li>Montaje siguiendo las fotos tomadas</li>
+                <li>Prueba final: el ordenador encendio correctamente</li>
+              </ol>
+            </div>
+            <div class="content-block">
+              <h3>Problemas encontrados</h3>
+              <p>Tornillos muy apretados, conectores duros, poco espacio de maniobra, cables sin etiquetar. <strong>Solucion:</strong> usar las fotos como referencia.</p>
+            </div>
+            <div class="content-block">
+              <h3>Conclusion</h3>
+              <p>Una practica muy completa que desarrollo paciencia, orden y precision en el manejo del hardware.</p>
+            </div>
+          `
+        }
+      ]
+    },
+    {
+      id: "b2",
+      title: "Bloque 2: Software",
+      subtitle: "Comparativa de Sistemas Operativos",
+      icon: "",
+      subfolders: [
+        {
+          id: "b2-1",
+          title: "Comparativa Windows / macOS / MaX",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Trabajo comparativo entre Windows, macOS y MaX (Madrid Linux), analizando sus diferencias en interfaz, compatibilidad, seguridad y coste.</p>
+              <a href="#" class="link-btn">> Ver pagina web del trabajo</a>
+            </div>
+            <div class="content-block">
+              <h3>Sistemas comparados</h3>
+              <div class="info-card">
+                <div class="info-card-title">Windows (Microsoft)</div>
+                <p>El mas extendido. Gran compatibilidad con software y juegos. Mas vulnerable a virus. Ideal para estudiar, trabajar y jugar.</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">macOS (Apple)</div>
+                <p>Integracion perfecta hardware-software. Popular en diseño y edicion. Solo funciona en equipos Apple. Mas caro.</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">MaX / Madrid Linux</div>
+                <p>Distribucion educativa gratuita de la Comunidad de Madrid. Seguro, ligero, ideal para equipos antiguos y para aprender.</p>
+              </div>
+            </div>
+            <div class="content-block">
+              <h3>Comparacion resumida</h3>
+              <table class="tech-table">
+                <thead>
+                  <tr><th>Aspecto</th><th>Windows</th><th>macOS</th><th>MaX/Linux</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Compatibilidad software</td><td>Muy alta</td><td>Media-alta</td><td>Media</td></tr>
+                  <tr><td>Seguridad</td><td>Requiere antivirus</td><td>Buena</td><td>Muy buena</td></tr>
+                  <tr><td>Coste</td><td>Licencia</td><td>Equipos caros</td><td>Gratuito</td></tr>
+                  <tr><td>Personalizacion</td><td>Limitada</td><td>Poca</td><td>Total</td></tr>
+                  <tr><td>Hardware compatible</td><td>Cualquier PC</td><td>Solo Apple</td><td>Incluso antiguos</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="content-block">
+              <h3>Conclusion</h3>
+              <p>No hay un «mejor» absoluto — depende del uso: juegos -> Windows; diseño -> macOS; aprender/ahorrar -> MaX.</p>
+            </div>
+          `
+        }
+      ]
+    },
+    {
+      id: "b3",
+      title: "Bloque 3: Redes",
+      subtitle: "WiFi del Colegio e HTML",
+      icon: "",
+      subfolders: [
+        {
+          id: "b3-1",
+          title: "3.1 Puntos de acceso WiFi",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Actividad de investigacion sobre la red WiFi del centro, respondiendo preguntas sobre infraestructura de red.</p>
+            </div>
+            <div class="content-block">
+              <h3>Preguntas y respuestas clave</h3>
+              <div class="info-card">
+                <div class="info-card-title">¿Basta un router para todo el colegio?</div>
+                <p>No. Se necesitan varios Access Points conectados a un switch para cubrir todas las plantas.</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">¿Cuantas redes para 535 dispositivos?</div>
+                <p>3 redes (cada una cubre hasta 254 dispositivos: 254 + 254 + 27).</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">IP del router</div>
+                <p>Probablemente 10.10.112.1 o 10.10.112.254 (puerta de enlace).</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">Proveedor de Internet (ISP)</div>
+                <p>Orange.</p>
+              </div>
+              <div class="info-card">
+                <div class="info-card-title">Mejoras posibles</div>
+                <p>Repetidores WiFi, reubicacion de puntos de acceso, uso de WiFi 6, cables Ethernet en zonas con mala cobertura.</p>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: "b3-2",
+          title: "3.2 HTML",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Actividad sobre lenguaje HTML (HyperText Markup Language), base del desarrollo web.</p>
+              <a href="#" class="link-btn">> Ver actividad HTML en Blooket</a>
+            </div>
+            <div class="content-block">
+              <h3>Autor</h3>
+              <div class="authors-box">
+                <div class="author-chip"><div class="author-avatar">S</div> Sergio Salas Diez</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: "b3-3",
+          title: "3.3 Videojuegos y VR",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Actividad sobre creacion de videojuegos y realidad virtual.</p>
+              <a href="#" class="link-btn">> Ver actividad en Kahoot</a>
+            </div>
+          `
+        }
+      ]
+    },
+    {
+      id: "b4",
+      title: "Bloque 4: Ciberseguridad",
+      subtitle: "Atacantes, Malware y Debate",
+      icon: "",
+      subfolders: [
+        {
+          id: "b4-1",
+          title: "4.1 Atacantes y Tipos de Ataques",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Estudio de los distintos tipos de atacantes informaticos y los modelos de ataque mas comunes.</p>
+            </div>
+            <div class="content-block">
+              <h3>Tipos de atacantes</h3>
+              <ul>
+                <li><strong>Hacker (White Hat):</strong> Experto que detecta fallos para corregirlos. Tambien llamado hacker etico.</li>
+                <li><strong>Cracker (Black Hat):</strong> Accede ilegalmente a sistemas para causar daño o robar informacion.</li>
+                <li><strong>Phreaker:</strong> Manipula sistemas de telefonia para obtener servicios sin pagar.</li>
+                <li><strong>Sniffer:</strong> Captura trafico de red para obtener datos confidenciales.</li>
+                <li><strong>Lammer:</strong> Usuario sin conocimientos que usa herramientas ajenas para atacar.</li>
+                <li><strong>Carder:</strong> Se dedica al robo y uso fraudulento de datos de tarjetas bancarias.</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Modelos de ataque</h3>
+              <ul>
+                <li><strong>Interrupcion:</strong> Impide el acceso a un sistema (afecta disponibilidad).</li>
+                <li><strong>Intercepcion:</strong> Accede a informacion sin autorizacion (afecta confidencialidad).</li>
+                <li><strong>Modificacion:</strong> Altera datos originales (afecta integridad).</li>
+                <li><strong>Fabricacion:</strong> Introduce informacion falsa haciendola pasar por legitima.</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Tipos de ataques</h3>
+              <ul>
+                <li><strong>Spoofing:</strong> Suplantacion de identidad.</li>
+                <li><strong>Sniffing:</strong> Captura de trafico de red.</li>
+                <li><strong>Conexion no autorizada:</strong> Acceso sin permiso aprovechando fallos de seguridad.</li>
+                <li><strong>Denegacion de Servicio (DoS):</strong> Saturar un servidor hasta que deje de funcionar.</li>
+                <li><strong>Ingenieria social:</strong> Manipulacion psicologica para obtener datos confidenciales.</li>
+                <li><strong>Carding:</strong> Uso ilegal de datos de tarjetas robadas.</li>
+              </ul>
+            </div>
+          `
+        },
+        {
+          id: "b4-2",
+          title: "4.2 Malware",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Presentacion sobre tipos de software malicioso (malware), sus caracteristicas y como protegerse.</p>
+              <a href="#" class="link-btn">> Ver presentacion Malware en Canva</a>
+            </div>
+            <div class="content-block">
+              <h3>Autor</h3>
+              <div class="authors-box">
+                <div class="author-chip"><div class="author-avatar">S</div> Sergio Salas Diez</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: "b4-3",
+          title: "4.3 Derecho a Desaparecer",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Debate estructurado en Kialo Edu sobre el derecho de las personas a ser olvidadas en internet («derecho al olvido digital»).</p>
+              <a href="#" class="link-btn">> Ver debate en Kialo Edu</a>
+            </div>
+            <div class="content-block">
+              <h3>Participante</h3>
+              <div class="authors-box">
+                <div class="author-chip"><div class="author-avatar">S</div> Sergio Salas Diez</div>
+              </div>
+            </div>
+          `
+        }
+      ]
+    },
+    {
+      id: "b5",
+      title: "Bloque 5: Bienestar Digital",
+      subtitle: "Redes Sociales e Identidades Virtuales",
+      icon: "",
+      subfolders: [
+        {
+          id: "b5-1",
+          title: "5.1 Redes Sociales y Privacidad",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Trabajo sobre que son las redes sociales, como configurar la privacidad y el impacto en la vida real.</p>
+              <a href="#" class="link-btn">> Ver pagina web</a>
+              <a href="#" class="link-btn">> Ver presentacion en Canva</a>
+            </div>
+            <div class="content-block">
+              <h3>Contenido clave</h3>
+              <ul>
+                <li><strong>Tipos de redes:</strong> contacto (Instagram, Facebook), video (TikTok, YouTube), mensajeria (WhatsApp, Telegram), profesionales (LinkedIn), noticias (X/Twitter).</li>
+                <li><strong>Configuracion de privacidad:</strong> revisar perfil publico, ajustar visibilidad de publicaciones, desactivar ubicacion, usar contraseñas fuertes + 2FA.</li>
+                <li><strong>Reglas antes de publicar:</strong> «¿Lo dirias en persona frente a tu familia?», la regla de los 10 años, evitar datos sensibles.</li>
+                <li><strong>Impacto real:</strong> relaciones personales, colegio/trabajo, salud mental, consecuencias legales.</li>
+              </ul>
+            </div>
+          `
+        },
+        {
+          id: "b5-2",
+          title: "5.2 Identidades Virtuales",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Trabajo sobre que es la identidad digital y como gestionarla de forma responsable.</p>
+              <a href="#" class="link-btn">> Ver pagina web</a>
+              <a href="#" class="link-btn">> Ver presentacion en Canva</a>
+            </div>
+            <div class="content-block">
+              <h3>Autor</h3>
+              <div class="authors-box">
+                <div class="author-chip"><div class="author-avatar">S</div> Sergio Salas Diez</div>
+              </div>
+            </div>
+            <div class="content-block">
+              <h3>Contenido clave</h3>
+              <ul>
+                <li>La identidad virtual = nombre de usuario + foto + bio + publicaciones + interacciones.</li>
+                <li>Consejos: ser consistente pero selectivo, separar perfiles (personal vs academico/profesional), controlar la huella digital buscando tu nombre en internet.</li>
+                <li>Herramientas: gestor de contraseñas, 2FA, revision periodica.</li>
+              </ul>
+            </div>
+          `
+        }
+      ]
+    },
+    {
+      id: "b6",
+      title: "Bloque 6: Multimedia",
+      subtitle: "Creacion y Edicion Multimedia",
+      icon: "",
+      subfolders: [
+        {
+          id: "b6-1",
+          title: "6.1 GIMP — Edicion de imagenes",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Dos practicas de edicion fotografica con GIMP (GNU Image Manipulation Program).</p>
+            </div>
+            <div class="content-block">
+              <h3>Practica 5 – Arreglar fotos</h3>
+              <ul>
+                <li><strong>Ejercicio 1 – Fotografia subexpuesta:</strong> Correccion de niveles (negro: 0, gris: 1, blanco: 100) para aclarar una imagen oscura.</li>
+                <li><strong>Ejercicio 2 – Fotografia sobreexpuesta:</strong> Correccion de niveles (negro: 125, gris: 1, blanco: 255) para oscurecer una imagen demasiado clara.</li>
+                <li><strong>Ejercicio 3 – Ajuste mediante curva de nivel:</strong> Uso de Colores > Curvas para modificar el contraste y brillo de la imagen.</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Practica 4 – Fotomontaje con capas</h3>
+              <ul>
+                <li>Composicion de imagen a partir de 3 fotos (castillo, niño, dragon) usando herramientas de seleccion, mascara rapida y escalado.</li>
+                <li>Exportacion en 4 formatos: XCF, JPG, GIF y PNG.</li>
+                <li><strong>Concepto clave:</strong> Las capas permiten editar cada elemento por separado sin afectar al resto.</li>
+              </ul>
+            </div>
+          `
+        },
+        {
+          id: "b6-2",
+          title: "6.2 Audacity — Edicion de audio",
+          content: `
+            <div class="content-block">
+              <h3>Descripcion</h3>
+              <p>Dos practicas de edicion de audio con Audacity.</p>
+            </div>
+            <div class="content-block">
+              <h3>Practica 1 – Comenzar con Audacity</h3>
+              <ul>
+                <li>Descarga e instalacion del programa.</li>
+                <li>Identificacion de la interfaz: area de trabajo, barra de menu, barras de herramientas (control, mezcla, edicion, medicion).</li>
+                <li>Descarga de archivos WAV desde el banco de imagenes del INTEF.</li>
+                <li>Montaje de audio con dos pistas simultaneas.</li>
+                <li>Guardado como P1_nombreapellido.aup</li>
+              </ul>
+            </div>
+            <div class="content-block">
+              <h3>Practica 2 – Cortar y pegar con Audacity</h3>
+              <ul>
+                <li>Edicion de una poesia desordenada («Dice la fuente» de Manuel Machado).</li>
+                <li>Uso de herramientas: Herramienta de seleccion, Silenciar seleccion, Acercar, Ajustar el proyecto a la anchura.</li>
+                <li>Atajos de teclado: Ctrl+X (cortar), Ctrl+C (copiar), Ctrl+V (pegar).</li>
+                <li>Guardado como P2_nombreapellido.aup</li>
+              </ul>
+            </div>
+          `
+        }
+      ]
+    }
+  ]
+};
+
+const sidebar = document.getElementById('sidebar');
+sidebar.innerHTML = `
+  <div class="sidebar-title">> Sistema de Archivos</div>
+  <div class="folder active" data-id="intro" onclick="openIntro(this)">
+    <div class="folder-header">
+      <div class="folder-icon"></div>
+      <span> Panel de Control</span>
+    </div>
+  </div>
+  ${data.blocks.map(b => `
+    <div class="folder" data-id="${b.id}" onclick="toggleFolder(this)">
+      <div class="folder-header">
+        <div class="folder-icon"></div>
+        <span>${b.title}</span>
+        <span class="folder-arrow">></span>
+      </div>
+      <div class="subfolder-list">
+        ${b.subfolders.map(s => `
+          <div class="subfolder" data-id="${s.id}" data-block="${b.id}" onclick="openSubfolder(event, this)">
+            <div class="subfolder-dot"></div>
+            <span>${s.title}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('')}
+`;
+
+const main = document.getElementById('mainContent');
+
+function openIntro(el) {
+  document.querySelectorAll('.folder').forEach(f => f.classList.remove('active'));
+  document.querySelectorAll('.subfolder').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  renderContent(data.intro);
+}
+
+function toggleFolder(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  document.querySelectorAll('.folder').forEach(f => f.classList.remove('expanded'));
+  if (!wasExpanded) el.classList.add('expanded');
+}
+
+function openSubfolder(e, el) {
+  e.stopPropagation();
+  document.querySelectorAll('.subfolder').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.folder').forEach(f => f.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.folder').classList.add('active');
+
+  const blockId = el.dataset.block;
+  const subId = el.dataset.id;
+  const block = data.blocks.find(b => b.id === blockId);
+  const sub = block.subfolders.find(s => s.id === subId);
+
+  renderContent({
+    title: sub.title,
+    subtitle: `root > ${block.id} > ${sub.id}`,
+    content: sub.content,
+    blockTitle: block.title,
+    blockSubtitle: block.subtitle
+  });
+}
+
+function renderContent(item) {
+  let headerHTML = '';
+  if (item.blockTitle) {
+    headerHTML = `
+      <div class="content-block">
+        <span class="tag">${item.blockTitle}</span>
+        <span class="tag tag-purple">${item.blockSubtitle}</span>
+      </div>
+    `;
+  }
+  main.innerHTML = `
+    <div class="content-panel">
+      <div class="breadcrumb">
+        <span>root</span> <span class="sep">/</span> <span>${item.subtitle.replace('root > ', '')}</span>
+      </div>
+      <h1 class="section-title glitch-text">${item.title}</h1>
+      ${headerHTML}
+      ${item.content}
+    </div>
+  `;
+  main.scrollTop = 0;
+}
+
+renderContent(data.intro);
+
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let w, h, particles = [];
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * w;
+    this.y = Math.random() * h;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.size = Math.random() * 1.5 + 0.5;
+    this.alpha = Math.random() * 0.5 + 0.2;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0) this.x = w;
+    if (this.x > w) this.x = 0;
+    if (this.y < 0) this.y = h;
+    if (this.y > h) this.y = 0;
+  }
+  draw() {
+    ctx.fillStyle = `rgba(0, 240, 255, ${this.alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+function animate() {
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+  ctx.lineWidth = 1;
+  const gridSize = 60;
+  for (let x = 0; x < w; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  particles.forEach(p => { p.update(); p.draw(); });
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        ctx.strokeStyle = `rgba(176, 38, 255, ${0.15 * (1 - dist/120)})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
+
